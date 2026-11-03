@@ -145,9 +145,9 @@
     box-shadow: 0 14px 44px rgba(16,30,54,.22);
   }
   .dialog.hide { display: none; }
-  .dlg-import { width: 520px; }
+  .dlg-import { width: 600px; }
   .dlg-edit { width: 620px; }
-  .dlg-tpl { width: 880px; }
+  .dlg-tpl { width: 800px; }
   .dlg-head {
     height: 52px; padding: 0 20px; display: flex; align-items: center; justify-content: space-between;
     border-bottom: 1px solid #f0f3f8;
@@ -180,6 +180,40 @@
   .up-ico svg { width: 44px; height: 44px; }
   .up-main { font-size: 13px; color: #8a94a6; }
   .up-main em { color: #2563eb; font-style: normal; }
+
+  /* 导入结果 */
+  .import-result { margin-top: 14px; }
+  .result-bar {
+    display: flex; align-items: center; gap: 10px;
+    background: #f0faf5; border: 1px solid #d3efe1; border-radius: 4px;
+    padding: 10px 14px; font-size: 12.5px; color: #2f9d6a;
+  }
+  .result-bar .ok { font-weight: 600; }
+  .result-bar .fail { color: #e6a23c; font-weight: 600; }
+  .result-bar .sep { color: #c0c4cc; }
+  .result-act { margin-top: 10px; }
+  .result-act a {
+    color: #2563eb; font-size: 12.5px; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 5px; text-decoration: none;
+  }
+  .result-act a svg { width: 13px; height: 13px; }
+  .fail-preview {
+    margin-top: 12px; border: 1px solid #f0f3f8; border-radius: 4px; overflow: auto;
+    max-height: 180px;
+  }
+  .fail-preview table {
+    width: 100%; min-width: 560px; border-collapse: collapse; table-layout: fixed; font-size: 12px;
+  }
+  .fail-preview th {
+    background: #f7f9fc; color: #5a6474; font-weight: 500; text-align: left;
+    height: 32px; padding: 0 8px; border-bottom: 1px solid #eef2f7; white-space: nowrap;
+  }
+  .fail-preview td {
+    height: 36px; padding: 0 8px; border-bottom: 1px solid #f2f5f9;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .fail-preview .reason { color: #f56c6c; }
+  .fail-preview .count { color: #909399; font-size: 12px; margin: 8px; }
 
   /* 模板预览（Excel 视图） */
   .xls-wrap { border: 1px solid #d9dee7; border-radius: 4px; overflow: auto; }
@@ -470,6 +504,61 @@
           </span>
           <div class="up-main">将 Excel 文件拖到此处，或<em>点击上传</em></div>
         </div>
+
+        <!-- 上传成功后的结果反馈 -->
+        <div class="import-result">
+          <div class="result-bar">
+            <span class="ok">导入完成</span>
+            <span class="sep">|</span>
+            <span>共 12 条</span>
+            <span class="sep">|</span>
+            <span>成功 10 条</span>
+            <span class="sep">|</span>
+            <span class="fail">失败 2 条</span>
+          </div>
+          <div class="result-act">
+            <a>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"/><path d="M7.5 10.5L12 15l4.5-4.5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+              下载结果文件
+            </a>
+          </div>
+          <div class="fail-preview">
+            <div class="count">失败记录预览（共 2 条）</div>
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:50px">行号</th>
+                  <th style="width:18%">养殖池名称</th>
+                  <th style="width:20%">关联基地名称</th>
+                  <th style="width:14%">关联车间</th>
+                  <th style="width:10%">水深(m)</th>
+                  <th style="width:10%">面积(m²)</th>
+                  <th style="width:26%">失败原因</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>5</td>
+                  <td>窑5</td>
+                  <td>测试基地</td>
+                  <td>窑车间</td>
+                  <td>6</td>
+                  <td>100</td>
+                  <td class="reason">养殖池名称“窑5”已存在</td>
+                </tr>
+                <tr>
+                  <td>8</td>
+                  <td>五角星养殖7</td>
+                  <td>金源渔业“智慧渔仓”</td>
+                  <td>养殖生产车间</td>
+                  <td>-2</td>
+                  <td>800</td>
+                  <td class="reason">水深必须大于 0</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
     <div class="dlg-foot">
@@ -488,19 +577,18 @@
       <div class="xls-wrap">
         <table class="xls">
           <colgroup>
-            <col style="width:40px"><col style="width:13%"><col style="width:14%"><col style="width:17%">
-            <col style="width:11.5%"><col style="width:10%"><col style="width:10%"><col style="width:20%">
+            <col style="width:40px"><col style="width:16%"><col style="width:20%">
+            <col style="width:13%"><col style="width:11%"><col style="width:11%"><col style="width:25%">
           </colgroup>
           <thead>
             <tr>
-              <th class="corner"></th><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>F</th><th>G</th>
+              <th class="corner"></th><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>F</th>
             </tr>
           </thead>
           <tbody>
             <tr>
               <td class="rn">1</td>
               <td class="hcol">养殖池名称<i>*</i></td>
-              <td class="hcol">关联养殖户名称<i>*</i></td>
               <td class="hcol">关联基地名称<i>*</i></td>
               <td class="hcol">关联车间<i>*</i></td>
               <td class="hcol">水深(m)<i>*</i></td>
@@ -512,7 +600,6 @@
               <td class="tip">必填，≤50 字</td>
               <td class="tip">必填，须与系统一致</td>
               <td class="tip">必填，须与系统一致</td>
-              <td class="tip">必填，须与系统一致</td>
               <td class="tip">必填，&gt;0</td>
               <td class="tip">必填，&gt;0</td>
               <td class="tip">选填，≤200 字</td>
@@ -520,7 +607,6 @@
             <tr>
               <td class="rn">3</td>
               <td>五角星养殖6</td>
-              <td>千岛湖养殖户</td>
               <td>金源渔业“智慧渔仓”</td>
               <td>养殖生产车间</td>
               <td>10</td>
@@ -530,7 +616,6 @@
             <tr>
               <td class="rn">4</td>
               <td>窑4</td>
-              <td>千岛湖养殖户</td>
               <td>测试基地</td>
               <td>窑车间</td>
               <td>6</td>
