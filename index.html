@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>养殖池信息维护</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+    font-size: 13px; color: #303133; background: #f4f7fb;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---------- 顶栏 ---------- */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; height: 54px; z-index: 100;
+    background: linear-gradient(90deg, #17305a 0%, #2352a6 48%, #2563eb 100%);
+    display: flex; align-items: center; justify-content: space-between; padding: 0 18px 0 14px;
+  }
+  .brand { display: flex; align-items: center; gap: 9px; color: #fff; font-size: 15px; font-weight: 600; letter-spacing: .5px; }
+  .logo { width: 27px; height: 27px; border-radius: 6px; background: rgba(255,255,255,.16); display: flex; align-items: center; justify-content: center; }
+  .top-right { display: flex; align-items: center; gap: 16px; color: #e6efff; font-size: 12.5px; }
+  .top-right span { cursor: pointer; }
+  .top-right .sep { width: 1px; height: 12px; background: rgba(255,255,255,.3); cursor: default; }
+
+  /* ---------- 侧边栏 ---------- */
+  .sidebar {
+    position: fixed; top: 54px; bottom: 0; left: 0; width: 200px;
+    background: #fff; border-right: 1px solid #e6ebf2; overflow-y: auto; padding: 6px 0 10px;
+  }
+  .sidebar::-webkit-scrollbar { width: 6px; }
+  .sidebar::-webkit-scrollbar-thumb { background: #dfe5ee; border-radius: 3px; }
+  .menu-item {
+    display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px;
+    color: #303133; font-size: 13px; cursor: pointer;
+  }
+  .menu-item .ico { width: 15px; height: 15px; flex: 0 0 15px; color: #7b8794; display: flex; align-items: center; justify-content: center; }
+  .menu-item .ico svg { width: 15px; height: 15px; }
+  .menu-item .arrow { margin-left: auto; color: #c8ced8; display: flex; }
+  .menu-item .arrow svg { width: 9px; height: 9px; }
+  .menu-item.open { background: #eff6ff; color: #2563eb; font-weight: 500; }
+  .menu-item.open .ico { color: #2563eb; }
+  .menu-item.open .arrow { transform: rotate(180deg); color: #2563eb; }
+
+  .sub { padding: 2px 0 4px; }
+  .sub-item {
+    position: relative; height: 34px; display: flex; align-items: center;
+    padding-left: 40px; font-size: 12.5px; color: #5a6474; cursor: pointer;
+  }
+  .sub-item.active { background: #e8f1ff; color: #2563eb; font-weight: 500; }
+  .sub-item.active::before {
+    content: ""; position: absolute; left: 0; top: 7px; bottom: 7px; width: 3px;
+    background: #2563eb; border-radius: 0 2px 2px 0;
+  }
+
+  /* ---------- 主区域 ---------- */
+  .main { margin-left: 200px; margin-top: 54px; padding: 14px 16px 22px; }
+
+  .page-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
+  .page-title { font-size: 16px; font-weight: 600; color: #1f2d3d; margin-bottom: 5px; }
+  .page-sub { font-size: 12px; color: #909399; }
+  .head-actions { display: flex; align-items: center; gap: 10px; }
+
+  .btn {
+    height: 32px; padding: 0 14px; border-radius: 4px; font-size: 13px; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 5px; border: 1px solid transparent;
+    font-family: inherit;
+  }
+  .btn svg { width: 13px; height: 13px; }
+  .btn-primary { background: #2563eb; color: #fff; }
+  .btn-primary:hover { background: #1e56d0; }
+  .btn-default { background: #fff; border-color: #dcdfe6; color: #414a57; }
+  .btn-default:hover { border-color: #2563eb; color: #2563eb; }
+
+  .panel { background: #fff; border: 1px solid #e6ebf2; border-radius: 4px; margin-bottom: 12px; }
+
+  /* ---------- 筛选 ---------- */
+  .filter { padding: 16px 16px 14px; }
+  .filter-row { display: grid; grid-template-columns: 1fr 1fr 1fr 2fr; gap: 14px 22px; }
+  .filter-row + .filter-row { margin-top: 14px; }
+  .field label { display: block; font-size: 12.5px; color: #606266; margin-bottom: 6px; }
+  .input {
+    height: 32px; border: 1px solid #dcdfe6; border-radius: 4px; background: #fff;
+    display: flex; align-items: center; padding: 0 10px; font-size: 12.5px; color: #b6bbc4;
+    white-space: nowrap; overflow: hidden;
+  }
+  .range { display: flex; align-items: center; gap: 6px; }
+  .range .input { flex: 1; }
+  .range .dash { color: #c0c4cc; font-size: 12px; }
+
+  .filter-row2 { display: flex; align-items: flex-end; gap: 12px; margin-top: 14px; }
+  .filter-row2 .field { width: 168px; }
+  .select {
+    height: 32px; border: 1px solid #dcdfe6; border-radius: 4px; background: #fff;
+    display: flex; align-items: center; justify-content: space-between; padding: 0 10px;
+    font-size: 12.5px; color: #414a57;
+  }
+  .caret { color: #c0c4cc; display: flex; }
+  .caret svg { width: 9px; height: 9px; }
+
+  /* ---------- 表格 ---------- */
+  .table-panel { padding: 0 16px 10px; }
+  .panel-head { display: flex; align-items: center; gap: 7px; padding: 12px 0 11px; font-size: 13.5px; font-weight: 600; color: #1f2d3d; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: #2563eb; box-shadow: 0 0 0 2px #dbe7ff; }
+
+  .table-scroll { overflow-x: auto; padding-bottom: 2px; }
+  .table-scroll::-webkit-scrollbar { height: 8px; }
+  .table-scroll::-webkit-scrollbar-thumb { background: #dfe5ee; border-radius: 4px; }
+
+  table { width: 100%; min-width: 1336px; border-collapse: collapse; table-layout: fixed; }
+  th {
+    background: #f7f9fc; color: #5a6474; font-weight: 500; text-align: left;
+    height: 38px; padding: 0 7px; font-size: 12px;
+    border-top: 1px solid #eef2f7; border-bottom: 1px solid #eef2f7; white-space: nowrap;
+  }
+  td {
+    height: 40px; padding: 0 7px; font-size: 12px; color: #333;
+    border-bottom: 1px solid #f2f5f9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  tbody tr:hover td { background: #fafcff; }
+
+  .tag-on {
+    display: inline-block; padding: 1px 9px; border-radius: 3px; font-size: 12px;
+    color: #2f9d6a; background: #eefaf3; border: 1px solid #cdebda; line-height: 18px;
+  }
+  .ops { display: flex; align-items: center; }
+  .ops a { color: #2563eb; font-size: 12px; cursor: pointer; text-decoration: none; }
+  .ops .bar { width: 1px; height: 11px; background: #e6ebf2; margin: 0 6px; }
+
+  .pager { display: flex; align-items: center; justify-content: flex-end; gap: 12px; padding: 14px 0 4px; font-size: 12.5px; color: #606266; }
+  .pager .box { height: 28px; border: 1px solid #dcdfe6; border-radius: 4px; display: flex; align-items: center; padding: 0 8px; gap: 6px; background: #fff; cursor: pointer; }
+  .pager .num { width: 28px; height: 28px; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .pager .num.on { background: #2563eb; color: #fff; }
+  .pager .jump { display: flex; align-items: center; gap: 6px; }
+  .pager .jump .box { width: 42px; justify-content: center; padding: 0; }
+
+  /* ---------- 弹窗 ---------- */
+  .mask {
+    position: fixed; inset: 0; background: rgba(17,26,44,.42); z-index: 200;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .mask.hide { display: none; }
+  .dialog {
+    background: #fff; border-radius: 6px; overflow: hidden;
+    box-shadow: 0 14px 44px rgba(16,30,54,.22);
+  }
+  .dialog.hide { display: none; }
+  .dlg-import { width: 520px; }
+  .dlg-edit { width: 620px; }
+  .dlg-tpl { width: 880px; }
+  .dlg-head {
+    height: 52px; padding: 0 20px; display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid #f0f3f8;
+  }
+  .dlg-title { font-size: 15px; font-weight: 600; color: #1f2d3d; }
+  .dlg-close { color: #a8abb2; font-size: 17px; cursor: pointer; line-height: 1; }
+  .dlg-body { padding: 18px 20px 20px; }
+  .dlg-body.form-body { padding: 18px 20px 6px; }
+  .dlg-foot {
+    display: flex; justify-content: flex-end; gap: 10px; padding: 13px 20px; border-top: 1px solid #f0f3f8;
+  }
+
+  /* 导入弹窗 */
+  .import-body { padding: 18px 22px 20px; }
+  .step { margin-bottom: 18px; }
+  .step:last-child { margin-bottom: 4px; }
+  .step-head { display: flex; align-items: center; justify-content: space-between; }
+  .step-title { font-size: 14px; font-weight: 600; color: #1f2d3d; }
+  .step-tip { font-size: 12px; color: #8a94a6; margin-top: 7px; }
+  .btn-sm { height: 34px; padding: 0 16px; border-radius: 6px; }
+
+  .uploader {
+    border: 1px dashed #dcdfe6; border-radius: 8px; background: #fff;
+    height: 168px; margin-top: 11px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 11px; cursor: pointer;
+  }
+  .uploader:hover { border-color: #2563eb; }
+  .up-ico { color: #c9ccd4; display: flex; }
+  .up-ico svg { width: 44px; height: 44px; }
+  .up-main { font-size: 13px; color: #8a94a6; }
+  .up-main em { color: #2563eb; font-style: normal; }
+
+  /* 模板预览（Excel 视图） */
+  .xls-wrap { border: 1px solid #d9dee7; border-radius: 4px; overflow: auto; }
+  .xls { border-collapse: collapse; width: 100%; min-width: 0; table-layout: fixed; font-size: 12px; }
+  .xls th, .xls td {
+    border: 1px solid #d9dee7; height: 32px; padding: 0 6px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 400;
+    border-top: none; border-left: none;
+  }
+  .xls tr > *:first-child { border-left: 1px solid #d9dee7; }
+  .xls thead th {
+    background: #f3f5f9; color: #6b7280; text-align: center; font-size: 11.5px; height: 26px;
+  }
+  .xls .rn { background: #f3f5f9; color: #6b7280; text-align: center; font-size: 11.5px; }
+  .xls .hcol { background: #eef2f8; font-weight: 600; color: #1f2d3d; }
+  .xls .hcol i { color: #f56c6c; font-style: normal; margin-left: 2px; }
+  .xls .tip {
+    color: #8a94a6; font-size: 11px; white-space: normal; line-height: 1.5;
+    padding: 6px 7px; height: auto; background: #fcfcfd;
+  }
+
+  /* 编辑表单 */
+  .form { display: grid; grid-template-columns: 1fr 1fr; gap: 15px 22px; }
+  .f { min-width: 0; }
+  .f.full { grid-column: 1 / -1; }
+  .f label { display: block; font-size: 12.5px; color: #606266; margin-bottom: 6px; }
+  .f label i { color: #f56c6c; font-style: normal; margin-left: 2px; }
+  .f .ctl {
+    height: 32px; border: 1px solid #dcdfe6; border-radius: 4px; background: #fff;
+    display: flex; align-items: center; padding: 0 10px; font-size: 12.5px; color: #303133;
+    white-space: nowrap; overflow: hidden;
+  }
+  .f .ctl.readonly { background: #f5f7fa; border-color: #e9edf3; color: #a8abb2; cursor: not-allowed; }
+  .unit-wrap { display: flex; align-items: center; gap: 8px; }
+  .unit-wrap .ctl { flex: 1; }
+  .unit { font-size: 12.5px; color: #606266; flex: 0 0 auto; }
+  .f textarea {
+    width: 100%; height: 78px; border: 1px solid #dcdfe6; border-radius: 4px; resize: none;
+    padding: 8px 10px; font-size: 12.5px; color: #303133; font-family: inherit; outline: none;
+  }
+  .counter { text-align: right; font-size: 12px; color: #c0c4cc; margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<!-- 顶栏 -->
+<header class="topbar">
+  <div class="brand">
+    <div class="logo">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 12c3.6-4.6 9.4-4.6 13 0-3.6 4.6-9.4 4.6-13 0z"/>
+        <circle cx="8" cy="11" r=".9" fill="#fff" stroke="none"/>
+        <path d="M16 12l5-3.2v6.4z"/>
+      </svg>
+    </div>
+    <span>渔业溯源系统</span>
+  </div>
+  <div class="top-right">
+    <span>修改密码</span>
+    <span class="sep"></span>
+    <span>退出登录</span>
+    <span>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#e6efff" stroke-width="1.8" stroke-linecap="round">
+        <path d="M4 7h16M4 12h16M4 17h16"/>
+      </svg>
+    </span>
+  </div>
+</header>
+
+<!-- 侧边栏 -->
+<aside class="sidebar">
+  <div class="menu-item open">
+    <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6"/><path d="M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg></span>
+    <span>主数据管理</span>
+    <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+  </div>
+  <div class="sub">
+    <div class="sub-item">基地信息管理</div>
+    <div class="sub-item active">养殖池信息维护</div>
+    <div class="sub-item">养殖池管理</div>
+    <div class="sub-item">品牌信息管理</div>
+    <div class="sub-item">物料信息管理</div>
+    <div class="sub-item">车间信息管理</div>
+    <div class="sub-item">鱼种管理</div>
+    <div class="sub-item">养殖方式管理</div>
+    <div class="sub-item">产品管理</div>
+  </div>
+
+  <div class="menu-item">
+    <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg></span>
+    <span>驾驶舱</span>
+    <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+  </div>
+  <div class="menu-item">
+    <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 0 1 13.7-5.6L20 8"/><path d="M20 4v4h-4"/><path d="M20 12a8 8 0 0 1-13.7 5.6L4 16"/><path d="M4 20v-4h4"/></svg></span>
+    <span>养殖过程管理</span>
+    <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+  </div>
+  <div class="menu-item">
+    <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12l3 3 5-6"/></svg></span>
+    <span>质检管理</span>
+    <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+  </div>
+  <div class="menu-item">
+    <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12c3.6-4.6 9.4-4.6 13 0-3.6 4.6-9.4 4.6-13 0z"/><path d="M16 12l5-3.2v6.4z"/></svg></span>
+    <span>淳牌有机鱼养殖过程</span>
+    <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+  </div>
+  <div class="menu-item">
+    <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l9-4 9 4v10l-9 4-9-4z"/><path d="M3 7l9 4 9-4"/><path d="M12 11v10"/></svg></span>
+    <span>仓储管理</span>
+    <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+  </div>
+  <div class="menu-item">
+    <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/></svg></span>
+    <span>养殖户管理</span>
+    <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+  </div>
+  <div class="menu-item">
+    <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v3M14 20h6"/></svg></span>
+    <span>溯源管理</span>
+    <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+  </div>
+  <div class="menu-item">
+    <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M9 6v12"/></svg></span>
+    <span>配额管理</span>
+    <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+  </div>
+  <div class="menu-item">
+    <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13v-1a8 8 0 0 1 16 0v1"/><rect x="2" y="13" width="4" height="7" rx="2"/><rect x="18" y="13" width="4" height="7" rx="2"/></svg></span>
+    <span>客服工具</span>
+    <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+  </div>
+  <div class="menu-item">
+    <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/></svg></span>
+    <span>溯源模板管理</span>
+    <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+  </div>
+  <div class="menu-item">
+    <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg></span>
+    <span>系统管理</span>
+    <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+  </div>
+  <div class="menu-item">
+    <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h10a2 2 0 0 1 2 2v14l-7-3-7 3V5a2 2 0 0 1 2-2z"/><path d="M9.5 9.5l2 2 3.5-3.5"/></svg></span>
+    <span>认证标准管理</span>
+    <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+  </div>
+  <div class="menu-item">
+    <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 4h4M14 8h2M20 4v3M14 14h7v7h-3M14 17h3"/></svg></span>
+    <span>消费者扫码管理</span>
+    <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+  </div>
+</aside>
+
+<!-- 主区域 -->
+<main class="main">
+  <div class="page-head">
+    <div>
+      <div class="page-title">养殖池信息维护</div>
+      <div class="page-sub">管理养殖场的水池信息</div>
+    </div>
+    <div class="head-actions">
+      <button class="btn btn-default" onclick="openImport()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 15V4"/><path d="M7.5 8.5L12 4l4.5 4.5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/>
+        </svg>
+        导入
+      </button>
+      <button class="btn btn-primary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        新增养殖池
+      </button>
+    </div>
+  </div>
+
+  <div class="panel filter">
+    <div class="filter-row">
+      <div class="field"><label>养殖池编码</label><div class="input">请输入养殖池编码</div></div>
+      <div class="field"><label>养殖池名称</label><div class="input">请输入养殖池名称</div></div>
+      <div class="field">
+        <label>鱼种</label>
+        <div class="select">
+          <span style="color:#b6bbc4">请选择鱼种</span>
+          <span class="caret"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+        </div>
+      </div>
+      <div class="field">
+        <label>投苗日期</label>
+        <div class="range"><div class="input">开始时间</div><span class="dash">—</span><div class="input">结束时间</div></div>
+      </div>
+    </div>
+    <div class="filter-row">
+      <div class="field"><label>所属基地名称</label><div class="input">请输入基地名称搜索</div></div>
+      <div class="field"><label>关联养殖户名称</label><div class="input">请选择关联养殖户名称</div></div>
+      <div class="field"><label>创建人</label><div class="input">请选择创建人</div></div>
+      <div class="field">
+        <label>创建时间</label>
+        <div class="range"><div class="input">开始时间</div><span class="dash">—</span><div class="input">结束时间</div></div>
+      </div>
+    </div>
+    <div class="filter-row2">
+      <div class="field">
+        <label>状态</label>
+        <div class="select"><span>全部</span><span class="caret"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span></div>
+      </div>
+      <button class="btn btn-primary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg>
+        查询
+      </button>
+      <button class="btn btn-default">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v4h-4"/></svg>
+        重置
+      </button>
+    </div>
+  </div>
+
+  <div class="panel table-panel">
+    <div class="panel-head"><span class="dot"></span>养殖池列表</div>
+    <div class="table-scroll">
+    <table>
+      <colgroup>
+        <col style="width:86px"><col style="width:90px"><col style="width:112px"><col style="width:98px">
+        <col style="width:118px"><col style="width:90px"><col style="width:58px"><col style="width:66px">
+        <col style="width:66px"><col style="width:46px"><col style="width:52px"><col style="width:90px">
+        <col style="width:54px"><col style="width:148px"><col style="width:56px"><col style="width:106px">
+      </colgroup>
+      <thead>
+        <tr>
+          <th>养殖池编码</th><th>养殖池名称</th><th>基地名称</th><th>车间名称</th>
+          <th>投苗编码</th><th>投苗日期</th><th>鱼种</th><th>当前存塘</th><th>可用预售</th>
+          <th>水深</th><th>面积</th><th>关联养殖户名称</th>
+          <th>创建人</th><th>创建时间</th><th>状态</th><th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>98P000831</td><td>五角星养殖5</td><td>金源渔业“智慧渔仓”</td><td>养殖生产车间</td><td>TM20260415001</td><td>2026-04-15</td><td>鳙鱼</td><td>12,500</td><td>8,000</td><td>10</td><td>1000</td><td>千岛湖养殖户</td><td>养殖户</td><td>2026-06-29 06:31:24</td><td><span class="tag-on">启用</span></td><td><div class="ops"><a>查看</a><span class="bar"></span><a onclick="openEdit()">编辑</a><span class="bar"></span><a>禁用</a></div></td></tr>
+        <tr><td>98P000830</td><td>五角星养殖4</td><td>金源渔业“智慧渔仓”</td><td>养殖生产车间</td><td>TM20260415002</td><td>2026-04-15</td><td>鳙鱼</td><td>11,800</td><td>7,500</td><td>10</td><td>1000</td><td>千岛湖养殖户</td><td>养殖户</td><td>2026-06-29 03:26:04</td><td><span class="tag-on">启用</span></td><td><div class="ops"><a>查看</a><span class="bar"></span><a onclick="openEdit()">编辑</a><span class="bar"></span><a>禁用</a></div></td></tr>
+        <tr><td>98P000873</td><td>窑2测试池塘</td><td>测试基地</td><td>窑车间</td><td>TM20260506001</td><td>2026-05-06</td><td>鲢鱼</td><td>3,200</td><td>2,000</td><td>6</td><td>100</td><td>千岛湖养殖户</td><td>养殖户</td><td>2026-06-15 05:29:29</td><td><span class="tag-on">启用</span></td><td><div class="ops"><a>查看</a><span class="bar"></span><a onclick="openEdit()">编辑</a><span class="bar"></span><a>禁用</a></div></td></tr>
+        <tr><td>98P000872</td><td>窑1测试池塘</td><td>测试基地</td><td>窑车间</td><td>TM20260506002</td><td>2026-05-06</td><td>鲢鱼</td><td>2,600</td><td>1,600</td><td>6</td><td>80</td><td>千岛湖养殖户</td><td>养殖户</td><td>2026-06-15 05:07:27</td><td><span class="tag-on">启用</span></td><td><div class="ops"><a>查看</a><span class="bar"></span><a onclick="openEdit()">编辑</a><span class="bar"></span><a>禁用</a></div></td></tr>
+        <tr><td>98P000871</td><td>窑调试池塘</td><td>测试基地</td><td>窑车间</td><td>TM20260502001</td><td>2026-05-02</td><td>草鱼</td><td>2,400</td><td>1,500</td><td>5</td><td>80</td><td>千岛湖养殖户</td><td>养殖户</td><td>2026-06-15 03:11:16</td><td><span class="tag-on">启用</span></td><td><div class="ops"><a>查看</a><span class="bar"></span><a onclick="openEdit()">编辑</a><span class="bar"></span><a>禁用</a></div></td></tr>
+        <tr><td>98P000870</td><td>窑测试池塘</td><td>测试基地</td><td>窑车间</td><td>TM20260428001</td><td>2026-04-28</td><td>鲢鱼</td><td>3,000</td><td>1,800</td><td>6</td><td>100</td><td>千岛湖养殖户</td><td>养殖户</td><td>2026-06-15 07:21:16</td><td><span class="tag-on">启用</span></td><td><div class="ops"><a>查看</a><span class="bar"></span><a onclick="openEdit()">编辑</a><span class="bar"></span><a>禁用</a></div></td></tr>
+        <tr><td>98P000868</td><td>五角星养殖3</td><td>金源渔业“智慧渔仓”</td><td>养殖生产车间</td><td>TM20260420001</td><td>2026-04-20</td><td>鳙鱼</td><td>3,500</td><td>2,200</td><td>10</td><td>100</td><td>千岛湖养殖户</td><td>养殖户</td><td>2026-06-15 01:38:24</td><td><span class="tag-on">启用</span></td><td><div class="ops"><a>查看</a><span class="bar"></span><a onclick="openEdit()">编辑</a><span class="bar"></span><a>禁用</a></div></td></tr>
+        <tr><td>98P000866</td><td>五角星养殖2</td><td>金源渔业“智慧渔仓”</td><td>养殖生产车间</td><td>TM20260418001</td><td>2026-04-18</td><td>鳙鱼</td><td>3,400</td><td>2,100</td><td>10</td><td>100</td><td>千岛湖养殖户</td><td>养殖户</td><td>2026-06-11 09:31:06</td><td><span class="tag-on">启用</span></td><td><div class="ops"><a>查看</a><span class="bar"></span><a onclick="openEdit()">编辑</a><span class="bar"></span><a>禁用</a></div></td></tr>
+        <tr><td>98P000864</td><td>窑3</td><td>金源渔业“智慧渔仓”</td><td>循环水处理系统区</td><td>TM20260410001</td><td>2026-04-10</td><td>青鱼</td><td>2,800</td><td>1,700</td><td>6</td><td>100</td><td>千岛湖养殖户</td><td>养殖户</td><td>2026-06-11 06:06:01</td><td><span class="tag-on">启用</span></td><td><div class="ops"><a>查看</a><span class="bar"></span><a onclick="openEdit()">编辑</a><span class="bar"></span><a>禁用</a></div></td></tr>
+        <tr><td>98P000863</td><td>窑2</td><td>金源渔业“智慧渔仓”</td><td>循环水处理系统区</td><td>TM20260410002</td><td>2026-04-10</td><td>青鱼</td><td>2,700</td><td>1,600</td><td>6</td><td>100</td><td>千岛湖养殖户</td><td>养殖户</td><td>2026-06-11 06:07:43</td><td><span class="tag-on">启用</span></td><td><div class="ops"><a>查看</a><span class="bar"></span><a onclick="openEdit()">编辑</a><span class="bar"></span><a>禁用</a></div></td></tr>
+      </tbody>
+    </table>
+    </div>
+    <div class="pager">
+      <span>共 17 条</span>
+      <div class="box">10条/页<span class="caret" style="margin-left:2px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span></div>
+      <div class="num">‹</div>
+      <div class="num on">1</div>
+      <div class="num">2</div>
+      <div class="num">›</div>
+      <div class="jump">跳至<div class="box">1</div>页</div>
+    </div>
+  </div>
+</main>
+
+<!-- 弹窗容器 -->
+<div class="mask hide" id="mask" onclick="if(event.target===this) closeDlg()">
+
+  <!-- 导入弹窗 -->
+  <div class="dialog dlg-import" id="dlgImport">
+    <div class="dlg-head">
+      <span class="dlg-title">导入养殖池</span>
+      <span class="dlg-close" onclick="closeDlg()">×</span>
+    </div>
+    <div class="dlg-body import-body">
+      <div class="step">
+        <div class="step-head">
+          <span class="step-title">1. 下载模板</span>
+          <button class="btn btn-primary btn-sm" onclick="openTpl()">下载模板</button>
+        </div>
+        <div class="step-tip">请按照模板列名和格式填写数据。</div>
+      </div>
+
+      <div class="step">
+        <div class="step-head"><span class="step-title">2. 上传已填写文件</span></div>
+        <div class="uploader">
+          <span class="up-ico">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/>
+            </svg>
+          </span>
+          <div class="up-main">将 Excel 文件拖到此处，或<em>点击上传</em></div>
+        </div>
+      </div>
+    </div>
+    <div class="dlg-foot">
+      <button class="btn btn-default btn-sm" onclick="closeDlg()">取消</button>
+      <button class="btn btn-primary btn-sm">确认导入</button>
+    </div>
+  </div>
+
+  <!-- 模板预览 -->
+  <div class="dialog dlg-tpl hide" id="dlgTpl">
+    <div class="dlg-head">
+      <span class="dlg-title">养殖池导入模板</span>
+      <span class="dlg-close" onclick="closeDlg()">×</span>
+    </div>
+    <div class="dlg-body">
+      <div class="xls-wrap">
+        <table class="xls">
+          <colgroup>
+            <col style="width:40px"><col style="width:13%"><col style="width:14%"><col style="width:17%">
+            <col style="width:11.5%"><col style="width:10%"><col style="width:10%"><col style="width:20%">
+          </colgroup>
+          <thead>
+            <tr>
+              <th class="corner"></th><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>F</th><th>G</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="rn">1</td>
+              <td class="hcol">养殖池名称<i>*</i></td>
+              <td class="hcol">关联养殖户名称<i>*</i></td>
+              <td class="hcol">关联基地名称<i>*</i></td>
+              <td class="hcol">关联车间<i>*</i></td>
+              <td class="hcol">水深(m)<i>*</i></td>
+              <td class="hcol">面积(m²)<i>*</i></td>
+              <td class="hcol">养殖池说明</td>
+            </tr>
+            <tr>
+              <td class="rn">2</td>
+              <td class="tip">必填，≤50 字</td>
+              <td class="tip">必填，须与系统一致</td>
+              <td class="tip">必填，须与系统一致</td>
+              <td class="tip">必填，须与系统一致</td>
+              <td class="tip">必填，&gt;0</td>
+              <td class="tip">必填，&gt;0</td>
+              <td class="tip">选填，≤200 字</td>
+            </tr>
+            <tr>
+              <td class="rn">3</td>
+              <td>五角星养殖6</td>
+              <td>千岛湖养殖户</td>
+              <td>金源渔业“智慧渔仓”</td>
+              <td>养殖生产车间</td>
+              <td>10</td>
+              <td>1000</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td class="rn">4</td>
+              <td>窑4</td>
+              <td>千岛湖养殖户</td>
+              <td>测试基地</td>
+              <td>窑车间</td>
+              <td>6</td>
+              <td>100</td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="dlg-foot">
+      <button class="btn btn-default btn-sm" onclick="openImport()">返回</button>
+      <button class="btn btn-primary btn-sm">下载模板</button>
+    </div>
+  </div>
+
+  <!-- 编辑弹窗 -->
+  <div class="dialog dlg-edit hide" id="dlgEdit">
+    <div class="dlg-head">
+      <span class="dlg-title">编辑养殖池</span>
+      <span class="dlg-close" onclick="closeDlg()">×</span>
+    </div>
+    <div class="dlg-body form-body">
+      <div class="form">
+        <div class="f">
+          <label>养殖池编码</label>
+          <div class="ctl readonly">98P000831</div>
+        </div>
+        <div class="f">
+          <label>养殖池名称<i>*</i></label>
+          <div class="ctl readonly">五角星养殖5</div>
+        </div>
+
+        <div class="f">
+          <label>关联养殖户名称<i>*</i></label>
+          <div class="ctl readonly">千岛湖养殖户</div>
+        </div>
+        <div class="f">
+          <label>关联养殖户编码</label>
+          <div class="ctl readonly">PF000098</div>
+        </div>
+
+        <div class="f">
+          <label>关联基地名称<i>*</i></label>
+          <div class="ctl readonly">金源渔业“智慧渔仓”</div>
+        </div>
+        <div class="f">
+          <label>关联车间<i>*</i></label>
+          <div class="ctl readonly">养殖生产车间</div>
+        </div>
+
+        <div class="f">
+          <label>水深<i>*</i></label>
+          <div class="unit-wrap">
+            <div class="ctl readonly">10.00</div>
+            <span class="unit">m</span>
+          </div>
+        </div>
+        <div class="f">
+          <label>面积<i>*</i></label>
+          <div class="unit-wrap">
+            <div class="ctl readonly">1000.00</div>
+            <span class="unit">m²</span>
+          </div>
+        </div>
+
+        <div class="f full">
+          <label>养殖池说明</label>
+          <textarea placeholder="请输入养殖池说明（最多200字）"></textarea>
+          <div class="counter">0/200</div>
+        </div>
+
+        <div class="f">
+          <label>创建人</label>
+          <div class="ctl readonly">千岛湖</div>
+        </div>
+        <div class="f">
+          <label>创建时间</label>
+          <div class="ctl readonly">2026-06-29 06:31:24</div>
+        </div>
+      </div>
+    </div>
+    <div class="dlg-foot">
+      <button class="btn btn-default" onclick="closeDlg()">取消</button>
+      <button class="btn btn-primary">保存</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  var mask = document.getElementById('mask');
+  var dlgs = {
+    import: document.getElementById('dlgImport'),
+    edit: document.getElementById('dlgEdit'),
+    tpl: document.getElementById('dlgTpl')
+  };
+
+  function showDlg(name) {
+    mask.classList.remove('hide');
+    for (var k in dlgs) {
+      dlgs[k].classList.toggle('hide', k !== name);
+    }
+  }
+  function openImport() { showDlg('import'); }
+  function openEdit() { showDlg('edit'); }
+  function openTpl() { showDlg('tpl'); }
+  function closeDlg() { mask.classList.add('hide'); }
+
+  // 默认进入列表页；地址栏加 #import / #tpl / #edit 可直接定位到对应弹窗
+  if (location.hash === '#import') { openImport(); }
+  else if (location.hash === '#tpl') { openTpl(); }
+  else if (location.hash === '#edit') { openEdit(); }
+</script>
+
+</body>
+</html>
